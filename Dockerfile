@@ -1,23 +1,25 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+# Use an official Node.js runtime as a parent image
+FROM node:18-alpine
 
-const app = express();
-const port = 3000;
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-// Enable CORS for all origins, so your website can access the script
-app.use(cors());
+# Copy package.json and package-lock.json
+COPY package*.json ./
 
-// Add a health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+# Install app dependencies
+RUN npm install
 
-// Serve the widget's JavaScript file
-app.get('/widget.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'widget.js'));
-});
+# Bundle app source
+COPY . .
 
-app.listen(port, () => {
-  console.log(`Chat widget server listening at http://localhost:${port}`);
-});
+# Make port 3000 available to the world outside this container
+EXPOSE 3000
+
+# Health check for Coolify
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl -f http://localhost:3000/health || exit 1
+
+# Define the command to run the app
+CMD [ "npm", "start" ]
+
+
