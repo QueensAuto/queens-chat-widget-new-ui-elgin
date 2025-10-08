@@ -4,6 +4,9 @@ FROM node:18-alpine
 # Set the working directory in the container
 WORKDIR /usr/src/app
 
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
@@ -21,5 +24,6 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl 
 
 # Define the command to run the app
 CMD [ "npm", "start" ]
+
 
 
