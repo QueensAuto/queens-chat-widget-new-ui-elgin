@@ -4,9 +4,21 @@ class ChatWidget extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.shadowRoot.innerHTML = `
             <style>
-                :host {
-                    font-family: 'Inter', sans-serif;
+                /* Custom scrollbar styles are now correctly placed inside the Shadow DOM */
+                #chat-messages::-webkit-scrollbar {
+                    width: 6px;
                 }
+                #chat-messages::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                #chat-messages::-webkit-scrollbar-thumb {
+                    background-color: #6B7280;
+                    border-radius: 3px;
+                }
+                #chat-messages::-webkit-scrollbar-thumb:hover {
+                    background-color: #9CA3AF;
+                }
+
                 .chat-widget-wrapper {
                     position: fixed;
                     bottom: 20px;
@@ -15,10 +27,9 @@ class ChatWidget extends HTMLElement {
                     z-index: 9999;
                     display: flex;
                     flex-direction: column;
-                    align-items: center; /* Center align items */
-                    /* Animation properties */
+                    align-items: center;
                     opacity: 0;
-                    transform: translate(-50%, 30px); /* Start lower and centered */
+                    transform: translate(-50%, 30px);
                     animation: slide-up 0.5s 0.3s ease-out forwards;
                 }
 
@@ -30,7 +41,8 @@ class ChatWidget extends HTMLElement {
                 }
 
                 #chat-messages {
-                    width: 400px;
+                    width: calc(100vw - 40px);
+                    max-width: 400px;
                     max-height: 60vh;
                     background: rgba(31, 41, 55, 0.8);
                     backdrop-filter: blur(10px);
@@ -41,50 +53,33 @@ class ChatWidget extends HTMLElement {
                     overflow-y: auto;
                     padding: 40px 15px 15px 15px;
                     border: 1px solid rgba(255, 255, 255, 0.1);
-                    position: relative; /* For positioning the minimize button */
+                    position: relative;
                 }
-                /* Custom Scrollbar Styling */
-                #chat-messages::-webkit-scrollbar {
-                    width: 8px;
+                #chat-messages.visible {
+                    display: flex;
                 }
-                #chat-messages::-webkit-scrollbar-track {
-                    background: rgba(0, 0, 0, 0.2);
-                    border-radius: 10px;
-                }
-                #chat-messages::-webkit-scrollbar-thumb {
-                    background-color: #4A5568; /* Same as user message bg */
-                    border-radius: 10px;
-                    border: 2px solid transparent;
-                    background-clip: content-box;
-                }
-                #chat-messages::-webkit-scrollbar-thumb:hover {
-                    background-color: #2D3748; /* Darker on hover */
-                }
+
                 #minimize-btn {
                     position: absolute;
                     top: 10px;
                     right: 10px;
                     background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
                     color: white;
+                    border: none;
                     width: 24px;
                     height: 24px;
                     border-radius: 50%;
                     cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 20px;
-                    line-height: 1;
-                    z-index: 10;
+                    font-size: 18px;
+                    line-height: 24px;
+                    text-align: center;
+                    transition: background-color 0.2s;
                 }
                 #minimize-btn:hover {
                     background: rgba(255, 255, 255, 0.2);
                 }
-                #chat-messages.visible {
-                    display: flex;
-                }
-                .message-group { display: flex; flex-direction: column; max-width: 85%; margin-bottom: 12px; }
+
+                .message-group { display: flex; flex-direction: column; max-width: 85%; margin-bottom: 15px; }
                 .bot-group { align-self: flex-start; }
                 .user-group { align-self: flex-end; }
                 .message-eyebrow { font-size: 12px; color: #a0aec0; margin-bottom: 4px; padding-left: 12px; }
@@ -101,15 +96,14 @@ class ChatWidget extends HTMLElement {
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     border-radius: 9999px;
                     padding: 8px;
-                    width: 256px; /* Collapsed width */
+                    width: calc(100vw - 80px);
+                    max-width: 256px;
                     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-                    transition: width 0.4s ease-in-out, transform 0.2s ease-out;
+                    transition: width 0.4s ease-in-out, transform 0.2s ease-out, max-width 0.4s ease-in-out;
                 }
-
                 #chat-input-container:hover {
                     transform: scale(1.03);
                 }
-
                 #chat-input-field {
                     flex-grow: 1;
                     background: transparent;
@@ -119,49 +113,39 @@ class ChatWidget extends HTMLElement {
                     padding: 0 12px;
                     font-size: 14px;
                 }
-                #chat-input-field::placeholder { color: #cbd5e0; }
-                #chat-send-btn {
-                    background: #4A5568; /* Darker background */
-                    color: white;
+                #chat-input-field::placeholder { color: #9CA3AF; }
+                #send-btn {
+                    background: #4A5568;
                     border: none;
                     border-radius: 50%;
-                    width: 36px;
-                    height: 36px;
+                    width: 32px;
+                    height: 32px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    flex-shrink: 0;
-                    transition: background-color 0.3s ease;
+                    transition: background-color 0.2s;
                 }
-                #chat-send-btn:hover { background: #2D3748; } /* Even darker on hover */
+                #send-btn:hover { background: #2D3748; }
+                #send-btn svg {
+                    width: 18px;
+                    height: 18px;
+                    color: white;
+                }
 
-                /* Conversation Starters */
-                .quick-replies { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; align-items: flex-start; width: 100%;}
-                .quick-reply { 
-                    background: rgba(74, 85, 104, 0.7); /* Matching user message color */
-                    color: #E2E8F0; 
-                    border-radius: 16px; 
-                    padding: 8px 14px; 
-                    font-size: 13px; 
-                    font-weight: 500; 
-                    cursor: pointer; 
-                    border: 1px solid rgba(255, 255, 255, 0.1); 
-                    transition: background-color 0.2s ease; 
-                    text-align: left;
-                }
-                .quick-reply:hover { background: rgba(45, 55, 72, 0.9); }
+                .quick-replies { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; align-items: flex-start; }
+                .quick-reply { background: rgba(74, 85, 104, 0.8); color: white; border-radius: 16px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); transition: background-color 0.2s ease; }
+                .quick-reply:hover { background: rgba(45, 55, 72, 0.8); }
             </style>
-            
             <div class="chat-widget-wrapper">
                 <div id="chat-messages">
                     <button id="minimize-btn" title="Minimize chat">&minus;</button>
                 </div>
                 <div id="chat-input-container">
                     <input type="text" id="chat-input-field" placeholder="Ask me anything...">
-                    <button id="chat-send-btn" title="Send">
-                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <button id="send-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
                         </svg>
                     </button>
                 </div>
@@ -170,59 +154,24 @@ class ChatWidget extends HTMLElement {
     }
 
     connectedCallback() {
-        // Get elements
-        this.inputContainer = this.shadowRoot.getElementById("chat-input-container");
-        this.inputField = this.shadowRoot.getElementById("chat-input-field");
-        this.sendButton = this.shadowRoot.getElementById("chat-send-btn");
-        this.messagesContainer = this.shadowRoot.getElementById("chat-messages");
-        this.minimizeButton = this.shadowRoot.getElementById("minimize-btn");
-        
+        this.messagesContainer = this.shadowRoot.getElementById('chat-messages');
+        this.inputContainer = this.shadowRoot.getElementById('chat-input-container');
+        this.inputField = this.shadowRoot.getElementById('chat-input-field');
+        this.sendButton = this.shadowRoot.getElementById('send-btn');
+        this.minimizeButton = this.shadowRoot.getElementById('minimize-btn');
         this.chatHistory = [];
 
-        // Add event listeners
         this.inputField.addEventListener('focus', () => this.expandWidget());
-        this.sendButton.addEventListener("click", () => this.sendMessage());
-        this.inputField.addEventListener("keypress", event => {
-            if (event.key === "Enter") this.sendMessage();
-        });
+        this.sendButton.addEventListener('click', () => this.sendMessage());
+        this.inputField.addEventListener('keypress', e => { if (e.key === 'Enter') this.sendMessage(); });
         this.minimizeButton.addEventListener('click', () => this.hideChatWindow());
-        window.addEventListener('resize', () => this.handleResize());
-        document.addEventListener('click', (e) => this.handleOutsideClick(e));
+        document.addEventListener('click', (event) => {
+            if (!this.contains(event.target) && this.messagesContainer.classList.contains('visible')) {
+                this.hideChatWindow();
+            }
+        });
 
         this.initializeChat();
-    }
-
-    handleOutsideClick(event) {
-        // Check if the click path is outside this component
-        if (!event.composedPath().includes(this)) {
-            this.hideChatWindow();
-            this.collapseWidget();
-        }
-    }
-
-    expandWidget() {
-        const expandedWidth = Math.min(window.innerWidth * 0.9, 400);
-        this.inputContainer.style.width = `${expandedWidth}px`;
-    }
-    
-    hideChatWindow() {
-        this.messagesContainer.classList.remove('visible');
-    }
-
-    collapseWidget() {
-        if (document.activeElement !== this.inputField) {
-             this.inputContainer.style.width = '256px';
-        }
-    }
-    
-    handleResize() {
-        if (document.activeElement === this.inputField) {
-             this.expandWidget();
-        }
-    }
-
-    scrollToBottom() {
-        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
 
     getChatId() {
@@ -233,10 +182,27 @@ class ChatWidget extends HTMLElement {
         }
         return chatId;
     }
+
+    scrollToBottom() {
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    }
     
-    linkify(inputText) {
+    expandWidget() {
+        const expandedWidth = Math.min(window.innerWidth * 0.9, 400);
+        this.inputContainer.style.width = `${expandedWidth}px`;
+        // If a conversation exists, show it on focus.
+        if (this.chatHistory.length > 0) {
+            this.messagesContainer.classList.add('visible');
+        }
+    }
+    
+    hideChatWindow() {
+        this.messagesContainer.classList.remove('visible');
+    }
+
+    linkify(text) {
         const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
-        return inputText.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #63b3ed; text-decoration: underline;">${url}</a>`);
+        return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: white; text-decoration: underline;">${url}</a>`);
     }
 
     markdownToHtml(text) {
@@ -245,7 +211,7 @@ class ChatWidget extends HTMLElement {
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\n/g, '<br>');
     }
-    
+
     prefillMessage(msg) {
         this.inputField.value = msg;
         this.sendMessage();
@@ -254,98 +220,89 @@ class ChatWidget extends HTMLElement {
     sendMessage() {
         const message = this.inputField.value.trim();
         if (message === "") return;
-    
-        const isFirstInteraction = !this.messagesContainer.classList.contains('visible');
-    
-        if (isFirstInteraction) {
-            this.messagesContainer.innerHTML = '<button id="minimize-btn" title="Minimize chat">&minus;</button>'; // Keep button
-            this.minimizeButton = this.shadowRoot.getElementById("minimize-btn"); // Re-assign minimize button
-            this.minimizeButton.addEventListener('click', () => this.hideChatWindow()); // Re-attach listener
-            this.chatHistory.forEach(msg => {
-                this.renderMessage(msg, msg.showQuickReplies);
-            });
-        }
-    
-        // Hide quick replies on send
-        const quickReplies = this.shadowRoot.querySelector('.quick-replies');
-        if (quickReplies) quickReplies.remove();
-        if (this.chatHistory.length > 0 && this.chatHistory[0].showQuickReplies) {
-            this.chatHistory[0].showQuickReplies = false;
-            sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
-        }
-    
+
+        const isFirstUserMessage = this.chatHistory.filter(msg => msg.type === 'user').length === 0;
+
+        // Show the window if it's not already visible (for the first message of a session)
         if (!this.messagesContainer.classList.contains('visible')) {
             this.messagesContainer.classList.add('visible');
         }
-    
-        this.chatHistory.push({ type: 'user', content: message });
+        
+        const quickReplies = this.shadowRoot.querySelector('.quick-replies');
+        if (quickReplies) quickReplies.remove();
+        
+        const userMessage = { type: 'user', content: message };
+        this.chatHistory.push(userMessage);
         sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
-        this.renderMessage({ content: message, type: 'user' });
+        this.renderMessage(userMessage);
+
         this.inputField.value = "";
         this.scrollToBottom();
-    
-        const typingIndicator = this.renderMessage({ content: "Jessica is typing...", type: 'typing' });
+
+        const typingIndicator = this.renderMessage({ type: 'bot', eyebrow: 'Jessica', content: 'typing...' });
+        typingIndicator.querySelector('.message').classList.add('typing-indicator');
         this.scrollToBottom();
-    
-        fetch('https://n8n.queensautoservices.com/webhook/a4303953-30c4-4951-b63f-4b1261053985/chat', {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chatId: this.getChatId(),
-                message: message,
-                route: 'general',
+
+        setTimeout(() => {
+            fetch('https://n8n.queensautoservices.com/webhook/a4303953-30c4-4951-b63f-4b1261053985/chat', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chatId: this.getChatId(), message: message, route: 'general' })
             })
-        })
-        .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! Status: ${response.status}`))
-        .then(data => {
-            typingIndicator.remove();
-            const botResponseContent = data.output || "Sorry, I couldn't understand that.";
-            const botMsg = { type: 'bot', eyebrow: 'Jessica', content: botResponseContent };
-            this.chatHistory.push(botMsg);
-            sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
-            this.renderMessage(botMsg);
-        })
-        .catch(error => {
-            typingIndicator.remove();
-            console.error("Error:", error);
-            const errorContent = "Sorry, I couldn't get a response. Please try again.";
-            const errorMsg = { type: 'bot', eyebrow: 'Jessica', content: errorContent };
-            this.chatHistory.push(errorMsg);
-            sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
-            this.renderMessage(errorMsg);
-        })
-        .finally(() => this.scrollToBottom());
+            .then(response => response.json())
+            .then(data => {
+                typingIndicator.remove();
+                const botResponse = { type: 'bot', eyebrow: 'Jessica', content: data.output || "Sorry, something went wrong." };
+                this.chatHistory.push(botResponse);
+                sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+                const botMessageGroup = this.renderMessage(botResponse);
+
+                // If this was the first message, show the quick replies now
+                if (isFirstUserMessage) {
+                    this.renderQuickReplies(botMessageGroup);
+                }
+            })
+            .catch(error => {
+                console.error("Fetch Error:", error);
+                typingIndicator.remove();
+                const errorResponse = { type: 'bot', eyebrow: 'Jessica', content: "I'm having trouble connecting. Please try again later." };
+                this.chatHistory.push(errorResponse);
+                sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+                this.renderMessage(errorResponse);
+            })
+            .finally(() => {
+                this.scrollToBottom();
+            });
+        }, 1000);
     }
     
     renderMessage(msg, showQuickReplies = false) {
         const group = document.createElement("div");
-        if(msg.type === 'user') {
-            group.className = "message-group user-group";
-            group.innerHTML = `<p class="message user-message">${msg.content}</p>`;
-        } else if (msg.type === 'bot') {
-            group.className = "message-group bot-group";
-            group.innerHTML = `<div class="message-eyebrow">${msg.eyebrow}</div><p class="message bot-message">${this.linkify(this.markdownToHtml(msg.content))}</p>`;
-            
-            if (showQuickReplies) {
-                const quickRepliesContainer = document.createElement("div");
-                quickRepliesContainer.className = "quick-replies";
-                const replies = ["Book an appointment", "Hours & Directions", "Coupon Details", "Continua en Español"];
-                replies.forEach(replyText => {
-                    const replyButton = document.createElement("button");
-                    replyButton.className = "quick-reply";
-                    replyButton.textContent = replyText;
-                    replyButton.onclick = () => this.prefillMessage(replyText);
-                    quickRepliesContainer.appendChild(replyButton);
-                });
-                group.appendChild(quickRepliesContainer);
-            }
-        } else if (msg.type === 'typing') {
-            group.className = "message-group bot-group";
-            group.innerHTML = `<p class="message typing-indicator">${msg.content}</p>`;
-        }
+        group.className = `message-group ${msg.type}-group`;
         
+        let html = '';
+        if (msg.eyebrow) {
+            html += `<div class="message-eyebrow">${msg.eyebrow}</div>`;
+        }
+        html += `<div class="message ${msg.type}-message">${this.linkify(this.markdownToHtml(msg.content))}</div>`;
+        group.innerHTML = html;
+
         this.messagesContainer.appendChild(group);
         return group;
+    }
+
+    renderQuickReplies(parentGroup) {
+        const quickRepliesContainer = document.createElement("div");
+        quickRepliesContainer.className = "quick-replies";
+        const replies = ["Book an appointment", "Hours & Directions", "Coupon Details", "Continua en Español"];
+        replies.forEach(text => {
+            const qr = document.createElement('div');
+            qr.className = 'quick-reply';
+            qr.textContent = text;
+            qr.onclick = () => this.prefillMessage(text);
+            quickRepliesContainer.appendChild(qr);
+        });
+        parentGroup.appendChild(quickRepliesContainer);
     }
 
     initializeChat() {
@@ -353,17 +310,19 @@ class ChatWidget extends HTMLElement {
         
         if (storedHistory) {
             this.chatHistory = JSON.parse(storedHistory);
+            // If history exists, render it right away but keep it hidden.
+            if (this.chatHistory.length > 0) {
+                this.chatHistory.forEach(msg => this.renderMessage(msg));
+            }
         } else {
-            const welcomeMessage = { 
-                type: 'bot', 
-                eyebrow: 'Jessica', 
-                content: `Hi there 👋<br><br>Welcome to Queens Auto Services! Thanks for stopping by. My name is Jessica, and I'm here to help. What can I do for you today?`,
-                showQuickReplies: true 
-            };
-            this.chatHistory = [welcomeMessage];
+            // Start with a completely empty history
+            this.chatHistory = [];
             sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
         }
     }
 }
 customElements.define('chat-widget', ChatWidget);
+
+// This line automatically adds the chat widget to the page
 document.body.appendChild(document.createElement('chat-widget'));
+
