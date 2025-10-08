@@ -4,35 +4,80 @@ class ChatWidget extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.shadowRoot.innerHTML = `
             <style>
-                #chat-messages::-webkit-scrollbar { width: 6px; }
-                #chat-messages::-webkit-scrollbar-track { background: transparent; }
-                #chat-messages::-webkit-scrollbar-thumb { background-color: #6B7280; border-radius: 3px; }
-                #chat-messages::-webkit-scrollbar-thumb:hover { background-color: #9CA3AF; }
+                /* Custom scrollbar styles are now correctly placed inside the Shadow DOM */
+                #chat-messages::-webkit-scrollbar {
+                    width: 6px;
+                }
+                #chat-messages::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                #chat-messages::-webkit-scrollbar-thumb {
+                    background-color: #6B7280;
+                    border-radius: 3px;
+                }
+                #chat-messages::-webkit-scrollbar-thumb:hover {
+                    background-color: #9CA3AF;
+                }
 
                 .chat-widget-wrapper {
-                    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-                    z-index: 9999; display: flex; flex-direction: column; align-items: center;
-                    opacity: 0; transform: translate(-50%, 30px);
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 9999;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    opacity: 0;
+                    transform: translate(-50%, 30px);
                     animation: slide-up 0.5s 0.3s ease-out forwards;
                 }
-                @keyframes slide-up { to { opacity: 1; transform: translate(-50%, 0); } }
+
+                @keyframes slide-up {
+                    to {
+                        opacity: 1;
+                        transform: translate(-50%, 0);
+                    }
+                }
 
                 #chat-messages {
-                    width: calc(100vw - 40px); max-width: 400px; max-height: 60vh;
-                    background: rgba(31, 41, 55, 0.8); backdrop-filter: blur(10px);
-                    border-radius: 12px; margin-bottom: 12px; display: none;
-                    flex-direction: column; overflow-y: auto; padding: 40px 15px 15px 15px;
-                    border: 1px solid rgba(255, 255, 255, 0.1); position: relative;
+                    width: calc(100vw - 40px);
+                    max-width: 400px;
+                    max-height: 60vh;
+                    background: rgba(31, 41, 55, 0.8);
+                    backdrop-filter: blur(10px);
+                    border-radius: 12px;
+                    margin-bottom: 12px;
+                    display: none; /* Initially hidden */
+                    flex-direction: column;
+                    overflow-y: auto;
+                    padding: 40px 15px 15px 15px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    position: relative;
                 }
-                #chat-messages.visible { display: flex; }
+                #chat-messages.visible {
+                    display: flex;
+                }
 
                 #minimize-btn {
-                    position: absolute; top: 10px; right: 10px;
-                    background: rgba(255, 255, 255, 0.1); color: white;
-                    border: none; width: 24px; height: 24px; border-radius: 50%;
-                    cursor: pointer; font-size: 18px; line-height: 24px;
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: rgba(255, 255, 255, 0.1);
+                    color: white;
+                    border: none;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 18px;
+                    line-height: 24px;
+                    text-align: center;
+                    transition: background-color 0.2s;
                 }
-                #minimize-btn:hover { background: rgba(255, 255, 255, 0.2); }
+                #minimize-btn:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
 
                 .message-group { display: flex; flex-direction: column; max-width: 85%; margin-bottom: 15px; }
                 .bot-group { align-self: flex-start; }
@@ -42,33 +87,54 @@ class ChatWidget extends HTMLElement {
                 .user-message { background: #6B7280; border-bottom-right-radius: 4px; align-self: flex-end;}
                 .bot-message { background: #2b6cb0; border-bottom-left-radius: 4px; }
                 .typing-indicator { color: #a0aec0; font-style: italic; }
-
+                
                 #chat-input-container {
-                    display: flex; align-items: center; background: rgba(31, 41, 55, 0.8);
-                    backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 9999px; padding: 8px; width: calc(100vw - 80px);
-                    max-width: 256px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                    display: flex;
+                    align-items: center;
+                    background: rgba(31, 41, 55, 0.8);
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 9999px;
+                    padding: 8px;
+                    width: calc(100vw - 80px);
+                    max-width: 256px;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
                     transition: width 0.4s ease-in-out, transform 0.2s ease-out, max-width 0.4s ease-in-out;
                 }
-                #chat-input-container:hover { transform: scale(1.03); }
+                #chat-input-container:hover {
+                    transform: scale(1.03);
+                }
                 #chat-input-field {
-                    flex-grow: 1; background: transparent; border: none; outline: none;
-                    color: white; padding: 0 12px; font-size: 14px;
+                    flex-grow: 1;
+                    background: transparent;
+                    border: none;
+                    outline: none;
+                    color: white;
+                    padding: 0 12px;
+                    font-size: 14px;
                 }
                 #chat-input-field::placeholder { color: #9CA3AF; }
                 #send-btn {
-                    background: #4A5568; border: none; border-radius: 50%;
-                    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+                    background: #4A5568;
+                    border: none;
+                    border-radius: 50%;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                     cursor: pointer;
+                    transition: background-color 0.2s;
                 }
                 #send-btn:hover { background: #2D3748; }
-                #send-btn svg { width: 18px; height: 18px; color: white; }
+                #send-btn svg {
+                    width: 18px;
+                    height: 18px;
+                    color: white;
+                }
 
                 .quick-replies { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; align-items: flex-start; }
-                .quick-reply { background: rgba(74, 85, 104, 0.8); color: white;
-                    border-radius: 16px; padding: 8px 14px; font-size: 13px; font-weight: 500;
-                    cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1);
-                }
+                .quick-reply { background: rgba(74, 85, 104, 0.8); color: white; border-radius: 16px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); transition: background-color 0.2s ease; }
                 .quick-reply:hover { background: rgba(45, 55, 72, 0.8); }
             </style>
             <div class="chat-widget-wrapper">
@@ -124,6 +190,7 @@ class ChatWidget extends HTMLElement {
     expandWidget() {
         const expandedWidth = Math.min(window.innerWidth * 0.9, 400);
         this.inputContainer.style.width = `${expandedWidth}px`;
+        // If a conversation exists, show it on focus.
         if (this.chatHistory.length > 0) {
             this.messagesContainer.classList.add('visible');
         }
@@ -156,6 +223,7 @@ class ChatWidget extends HTMLElement {
 
         const isFirstUserMessage = this.chatHistory.filter(msg => msg.type === 'user').length === 0;
 
+        // Show the window if it's not already visible (for the first message of a session)
         if (!this.messagesContainer.classList.contains('visible')) {
             this.messagesContainer.classList.add('visible');
         }
@@ -188,6 +256,8 @@ class ChatWidget extends HTMLElement {
                 this.chatHistory.push(botResponse);
                 sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
                 const botMessageGroup = this.renderMessage(botResponse);
+
+                // If this was the first message, show the quick replies now
                 if (isFirstUserMessage) {
                     this.renderQuickReplies(botMessageGroup);
                 }
@@ -206,7 +276,7 @@ class ChatWidget extends HTMLElement {
         }, 1000);
     }
     
-    renderMessage(msg) {
+    renderMessage(msg, showQuickReplies = false) {
         const group = document.createElement("div");
         group.className = `message-group ${msg.type}-group`;
         
@@ -240,13 +310,18 @@ class ChatWidget extends HTMLElement {
         
         if (storedHistory) {
             this.chatHistory = JSON.parse(storedHistory);
+            // If history exists, render it right away but keep it hidden.
             if (this.chatHistory.length > 0) {
                 this.chatHistory.forEach(msg => this.renderMessage(msg));
             }
         } else {
+            // Start with a completely empty history
             this.chatHistory = [];
             sessionStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
         }
     }
 }
 customElements.define('chat-widget', ChatWidget);
+
+// This line automatically adds the chat widget to the page
+document.body.appendChild(document.createElement('chat-widget'));
