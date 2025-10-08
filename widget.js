@@ -23,21 +23,23 @@ class ChatWidget extends HTMLElement {
                     position: fixed;
                     bottom: 20px;
                     left: 50%;
-                    transform: translateX(-50%);
                     z-index: 9999;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
+                    
+                    /* Initial state: hidden and positioned for slide-in */
                     opacity: 0;
+                    pointer-events: none;
                     transform: translate(-50%, 30px);
-                    animation: slide-up 0.5s 0.3s ease-out forwards;
+                    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
                 }
 
-                @keyframes slide-up {
-                    to {
-                        opacity: 1;
-                        transform: translate(-50%, 0);
-                    }
+                .chat-widget-wrapper.visible {
+                    /* Visible state: fully opaque and in final position */
+                    opacity: 1;
+                    pointer-events: auto;
+                    transform: translate(-50%, 0);
                 }
 
                 #chat-messages {
@@ -171,7 +173,29 @@ class ChatWidget extends HTMLElement {
             }
         });
 
+        // Listen for scroll events to handle fading
+        this.widgetWrapper = this.shadowRoot.querySelector('.chat-widget-wrapper');
+        this.handleScroll = this.handleScroll.bind(this);
+        window.addEventListener('scroll', this.handleScroll);
+
         this.initializeChat();
+        this.handleScroll(); // Run once on load to set the initial state
+    }
+
+    disconnectedCallback() {
+        window.removeEventListener('scroll', this.handleScroll);
+    }
+
+    handleScroll() {
+        const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+        const atBottom = (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 100;
+        
+        // Show the widget if scrolled past 10% AND not near the bottom
+        if (scrollPercent > 10 && !atBottom) {
+            this.widgetWrapper.classList.add('visible');
+        } else {
+            this.widgetWrapper.classList.remove('visible');
+        }
     }
 
     getChatId() {
@@ -325,3 +349,4 @@ customElements.define('chat-widget', ChatWidget);
 
 // This line automatically adds the chat widget to the page
 document.body.appendChild(document.createElement('chat-widget'));
+
