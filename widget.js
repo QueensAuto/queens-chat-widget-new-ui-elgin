@@ -187,11 +187,10 @@ class ChatWidget extends HTMLElement {
     }
 
     handleScroll() {
-        const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
         const atBottom = (window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 100;
         
-        // Show the widget if scrolled past 10% AND not near the bottom
-        if (scrollPercent > 10 && !atBottom) {
+        // Show the widget if scrolled down at all, but not at the top or bottom
+        if (window.scrollY > 0 && !atBottom) {
             this.widgetWrapper.classList.add('visible');
         } else {
             this.widgetWrapper.classList.remove('visible');
